@@ -1,8 +1,8 @@
 {
     "name": "wegmeister/flow-security",
-    "type": "neos-site",
-    "description": "Site package for the Zukunft Schiene Nord",
-    "license": "Proprietary",
+    "type": "neos-package",
+    "description": "Add security headers and install some additional packages for improved security of Neos / Flow.",
+    "license": ["GPL-3.0-or-later"],
     "require": {
         "neos/flow": "~8.3",
         "jvmtech/neos-hardening": "^1.0",

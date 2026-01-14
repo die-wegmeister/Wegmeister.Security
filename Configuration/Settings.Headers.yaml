@@ -1,0 +1,44 @@
+Wegmeister:
+  Security:
+    headers:
+
+      ContentSecurityPolicy:
+        allowUnsafeEvalInNeosBackend: true
+        allowUnsafeInlineStylesInNeosBackend: true
+        parts:
+          default-src: "'none'"
+
+          # For inline style and script we use nonces, which are added dynamically in the Middleware.
+          # Note: If you set this to null, the value AND the nonce-setting will be removed!
+          style-src: "'self'"
+          script-src: "'self'"
+
+          # To allow youtube, vimeo or other embedded content, add additional domains here,
+          # e. g. frame-src: "'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com"
+          frame-src: "'self'"
+
+          connect-src: "'self'"
+          img-src: "'self' blob: data:"
+          media-src: "'self'"
+          font-src: "'self' data:"
+          frame-ancestors: "'self'"
+          form-action: "'self'"
+          worker-src: "'self' blob:"
+
+      # Values defined here are used as default, if they are removed or missing in another settings file.
+      Strict-Transport-Security:
+        maxAge: 31536000
+        includeSubDomains: true
+        preload: true
+
+      X-Frame-Options: 'DENY'
+
+      Referrer-Policy: 'strict-origin'
+
+      X-Permitted-Cross-Domain-Policies: 'none'
+
+      Cross-Origin-Opener-Policy: 'same-origin'
+
+      Cross-Origin-Resource-Policy: 'same-origin'
+
+      Permissions-Policy: 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()'

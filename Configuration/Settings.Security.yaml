@@ -1,0 +1,24 @@
+Neos:
+  Flow:
+    session:
+      cookie:
+        # The cookie samesite.
+        # possible values: 'none', 'strict' and 'lax'
+        samesite: 'strict'
+
+    http:
+      # Defines the "application token" which is sent by in HTTP Response "X-Flow-Powered" headers.
+      #
+      # The value can be one of:
+      #
+      # - "Off" (no application token header is sent)
+      # - "ApplicationName" (the application name only, determined via the Neos.Flow.core.applicationKey setting)
+      # - "MajorVersion" (the application name + major version, e.g. "Neos/2"
+      # - "MinorVersion" (the application name + minor version, e.g. "Neos/2.1"
+      #
+      applicationToken: 'ApplicationName'
+
+JvMTECH:
+  NeosHardening:
+    checkFailedLogins: false
+    blockAfterFailedLogins: 5

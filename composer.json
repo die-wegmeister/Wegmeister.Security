@@ -1,0 +1,16 @@
+{
+    "name": "wegmeister/flow-security",
+    "type": "neos-site",
+    "description": "Site package for the Zukunft Schiene Nord",
+    "license": "Proprietary",
+    "require": {
+        "neos/flow": "~8.3",
+        "jvmtech/neos-hardening": "^1.0",
+        "sandstorm/neostwofactorauthentication": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wegmeister\\Security\\": "Classes"
+        }
+    }
+}

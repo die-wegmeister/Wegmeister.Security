@@ -2,6 +2,7 @@
 
 namespace Wegmeister\Security\Service;
 
+use DOMDocument;
 use Neos\Flow\Annotations as Flow;
 
 #[Flow\Scope('singleton')]
@@ -43,11 +44,24 @@ class NonceService
      */
     public function addNonceToScripts(string $content): string
     {
-        $content = preg_replace(
-            '/(<script((?! (nonce|src)=)[^>]*))>/i',
-            '$1 nonce="' . $this->getNonce() . '">',
-            $content
-        );
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($content, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_use_internal_errors(false);
+
+        $scripts = $dom->getElementsByTagName('script');
+
+        foreach ($scripts as $script) {
+            if ($script->hasAttribute('src')) {
+                continue;
+            }
+
+            // Add or replace nonce attribute
+            $script->setAttribute('nonce', $this->getNonce());
+        }
+
+        $content = $dom->saveHTML();
+
         return $content;
     }
 
@@ -58,11 +72,24 @@ class NonceService
      */
     public function addNonceToStyles(string $content): string
     {
-        $content = preg_replace(
-            '/(<style((?! (nonce)=)[^>]*))>/i',
-            '$1 nonce="' . $this->getNonce() . '">',
-            $content
-        );
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($content, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_use_internal_errors(false);
+
+        $styles = $dom->getElementsByTagName('style');
+
+        foreach ($styles as $style) {
+            if ($style->hasAttribute('src')) {
+                continue;
+            }
+
+            // Add or replace nonce attribute
+            $style->setAttribute('nonce', $this->getNonce());
+        }
+
+        $content = $dom->saveHTML();
+
         return $content;
     }
 

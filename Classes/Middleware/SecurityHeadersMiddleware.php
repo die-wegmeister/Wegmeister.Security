@@ -54,70 +54,11 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
             $response = $response->withHeader('X-XSS-Protection', '0');
         }
 
-        if (!$response->hasHeader('Content-Security-Policy')) {
-            $cspConfig = $this->headersConfiguration['ContentSecurityPolicy']['parts'] ?? [];
-            $cspDirectives = [];
-
-            foreach ($cspConfig as $directive => $value) {
-                // Skip null values
-                if ($value === null) {
-                    continue;
-                }
-
-                // Add nonce to script-src and style-src
-                if ($directive === 'script-src') {
-                    // Update script tags in the response body
-                    $content = $response->getBody()->getContents();
-                    $response = $response->withBody(
-                        Utils::streamFor(
-                            $this->nonceService->addNonceToScripts($content)
-                        )
-                    );
-
-                    // Add nonce to CSP header
-                    $value .= " 'nonce-" . $this->nonceService->getNonce() . "'";
-
-                    // Allow unsafe-eval in Neos backend, if configured
-                    if (
-                        $this->headersConfiguration['ContentSecurityPolicy']['allowUnsafeEvalInNeosBackend'] &&
-                        $request->getUri()->getPath() === '/neos/content'
-                    ) {
-                        $value .= " 'unsafe-eval'";
-                    }
-                } else if ($directive === 'style-src') {
-                    if (
-                        $this->headersConfiguration['ContentSecurityPolicy']['allowUnsafeInlineStylesInNeosBackend'] &&
-                        str_starts_with($request->getUri()->getPath(), '/neos/')
-                    ) {
-                        // Allow unsafe-inline in Neos backend (if configured).
-                        // Therefore skip adding nonce to styles, as this would conflict with unsafe-inline.
-                        $value .= " 'unsafe-inline'";
-                    } else {
-                        // Update style tags in the response body
-                        $content = $response->getBody()->getContents();
-                        $response = $response->withBody(
-                            Utils::streamFor(
-                                $this->nonceService->addNonceToStyles($content)
-                            )
-                        );
-
-                        // Add nonce to CSP header
-                        $value .= " 'nonce-" . $this->nonceService->getNonce() . "'";
-                    }
-                }
-                $value = trim($value);
-
-                // Skip empty values
-                if ($value === '') {
-                    continue;
-                }
-
-                $cspDirectives[] = $directive . ' ' . $value;
-            }
-
-            if (!empty($cspDirectives)) {
-                $response = $response->withHeader('Content-Security-Policy', implode('; ', $cspDirectives));
-            }
+        if ($response->hasHeader('Content-Security-Policy')) {
+            // Update existing CSP header to add nonce
+            $response = $this->updateCSPHeaderWithNonce($response);
+        } else {
+            $response = $this->addCSPHeader($request, $response);
         }
 
         if (!$response->hasHeader('Strict-Transport-Security')) {
@@ -151,6 +92,132 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
         }
         if (!$response->hasHeader('Permissions-Policy')) {
             $response = $response->withHeader('Permissions-Policy', $this->headersConfiguration['Permissions-Policy'] ?? 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Update existing Content-Security-Policy header to add nonce to script-src and style-src directives.
+     * @param ResponseInterface $response
+     * @return ResponseInterface
+     */
+    protected function updateCSPHeaderWithNonce(ResponseInterface $response): ResponseInterface
+    {
+        $cspHeader = $response->getHeaderLine('Content-Security-Policy');
+        $cspDirectives = explode(';', $cspHeader);
+        $updatedDirectives = [];
+        foreach ($cspDirectives as $directive) {
+            $directive = trim($directive);
+            if (str_starts_with($directive, 'script-src')) {
+                // Remove existing nonce entries
+                $directive = preg_replace("/ 'nonce-[^']+'/", '', $directive);
+
+                // Update script tags in the response body
+                $content = $response->getBody()->getContents();
+                $response = $response->withBody(
+                    Utils::streamFor(
+                        $this->nonceService->addNonceToScripts($content)
+                    )
+                );
+
+                // Add nonce to script-src directive
+                $directive .= " 'nonce-" . $this->nonceService->getNonce() . "'";
+            } else if (str_starts_with($directive, 'style-src')) {
+                // Remove existing nonce entries
+                $directive = preg_replace("/ 'nonce-[^']+'/", '', $directive);
+
+                // Update style tags in the response body
+                $content = $response->getBody()->getContents();
+                $response = $response->withBody(
+                    Utils::streamFor(
+                        $this->nonceService->addNonceToStyles($content)
+                    )
+                );
+
+                // Add nonce to style-src directive
+                $directive .= " 'nonce-" . $this->nonceService->getNonce() . "'";
+            }
+
+            $updatedDirectives[] = $directive;
+        }
+
+        $newCspHeader = implode('; ', $updatedDirectives);
+        $response = $response->withHeader('Content-Security-Policy', $newCspHeader);
+
+        return $response;
+    }
+
+    /**
+     * Add Content-Security-Policy header to response.
+     * @param ResponseInterface $response
+     * @return ResponseInterface
+     */
+    protected function addCSPHeader(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+
+        $cspConfig = $this->headersConfiguration['ContentSecurityPolicy']['parts'] ?? [];
+        $cspDirectives = [];
+
+        foreach ($cspConfig as $directive => $value) {
+            // Skip null values
+            if ($value === null) {
+                continue;
+            }
+
+            // Add nonce to script-src and style-src
+            if ($directive === 'script-src') {
+                // Update script tags in the response body
+                $content = $response->getBody()->getContents();
+                $response = $response->withBody(
+                    Utils::streamFor(
+                        $this->nonceService->addNonceToScripts($content)
+                    )
+                );
+
+                // Add nonce to CSP header
+                $value .= " 'nonce-" . $this->nonceService->getNonce() . "'";
+
+                // Allow unsafe-eval in Neos backend, if configured
+                if (
+                    $this->headersConfiguration['ContentSecurityPolicy']['allowUnsafeEvalInNeosBackend'] &&
+                    $request->getUri()->getPath() === '/neos/content'
+                ) {
+                    $value .= " 'unsafe-eval'";
+                }
+            } else if ($directive === 'style-src') {
+                if (
+                    $this->headersConfiguration['ContentSecurityPolicy']['allowUnsafeInlineStylesInNeosBackend'] &&
+                    str_starts_with($request->getUri()->getPath(), '/neos/')
+                ) {
+                    // Allow unsafe-inline in Neos backend (if configured).
+                    // Therefore skip adding nonce to styles, as this would conflict with unsafe-inline.
+                    $value .= " 'unsafe-inline'";
+                } else {
+                    // Update style tags in the response body
+                    $content = $response->getBody()->getContents();
+                    $response = $response->withBody(
+                        Utils::streamFor(
+                            $this->nonceService->addNonceToStyles($content)
+                        )
+                    );
+
+                    // Add nonce to CSP header
+                    $value .= " 'nonce-" . $this->nonceService->getNonce() . "'";
+                }
+            }
+            $value = trim($value);
+
+            // Skip empty values
+            if ($value === '') {
+                continue;
+            }
+
+            $cspDirectives[] = $directive . ' ' . $value;
+        }
+
+        if (!empty($cspDirectives)) {
+            $response = $response->withHeader('Content-Security-Policy', implode('; ', $cspDirectives));
         }
 
         return $response;

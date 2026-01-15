@@ -111,7 +111,7 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
             $directive = trim($directive);
             if (str_starts_with($directive, 'script-src')) {
                 // Remove existing nonce entries
-                $directive = preg_replace("/ 'nonce-[^']+'/", '', $directive);
+                $directive = preg_replace("/ 'nonce-[^']*'/", '', $directive);
 
                 // Update script tags in the response body
                 $content = $response->getBody()->getContents();
@@ -125,7 +125,7 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
                 $directive .= " 'nonce-" . $this->nonceService->getNonce() . "'";
             } else if (str_starts_with($directive, 'style-src')) {
                 // Remove existing nonce entries
-                $directive = preg_replace("/ 'nonce-[^']+'/", '', $directive);
+                $directive = preg_replace("/ 'nonce-[^']*'/", '', $directive);
 
                 // Update style tags in the response body
                 $content = $response->getBody()->getContents();

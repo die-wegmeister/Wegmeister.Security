@@ -109,6 +109,13 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
         $updatedDirectives = [];
         foreach ($cspDirectives as $directive) {
             $directive = trim($directive);
+
+            if (str_contains($directive, "'unsafe-inline'")) {
+                // Skip adding nonce if 'unsafe-inline' is present
+                $updatedDirectives[] = $directive;
+                continue;
+            }
+
             if (str_starts_with($directive, 'script-src')) {
                 // Remove existing nonce entries
                 $directive = preg_replace("/ 'nonce-[^']*'/", '', $directive);

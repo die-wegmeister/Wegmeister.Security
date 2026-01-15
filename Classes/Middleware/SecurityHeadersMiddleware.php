@@ -107,6 +107,9 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
         $cspHeader = $response->getHeaderLine('Content-Security-Policy');
         $cspDirectives = explode(';', $cspHeader);
         $updatedDirectives = [];
+
+        $isHtmlResponse = str_contains($response->getHeaderLine('Content-Type'), 'text/html');
+
         foreach ($cspDirectives as $directive) {
             $directive = trim($directive);
 
@@ -117,30 +120,34 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
             }
 
             if (str_starts_with($directive, 'script-src')) {
+                if ($isHtmlResponse) {
+                    // Update script tags in the response body
+                    $content = $response->getBody()->getContents();
+                    $response = $response->withBody(
+                        Utils::streamFor(
+                            $this->nonceService->addNonceToScripts($content)
+                        )
+                    );
+                }
+
                 // Remove existing nonce entries
                 $directive = preg_replace("/ 'nonce-[^']*'/", '', $directive);
-
-                // Update script tags in the response body
-                $content = $response->getBody()->getContents();
-                $response = $response->withBody(
-                    Utils::streamFor(
-                        $this->nonceService->addNonceToScripts($content)
-                    )
-                );
 
                 // Add nonce to script-src directive
                 $directive .= " 'nonce-" . $this->nonceService->getNonce() . "'";
             } else if (str_starts_with($directive, 'style-src')) {
+                if ($isHtmlResponse === true) {
+                    // Update style tags in the response body
+                    $content = $response->getBody()->getContents();
+                    $response = $response->withBody(
+                        Utils::streamFor(
+                            $this->nonceService->addNonceToStyles($content)
+                        )
+                    );
+                }
+
                 // Remove existing nonce entries
                 $directive = preg_replace("/ 'nonce-[^']*'/", '', $directive);
-
-                // Update style tags in the response body
-                $content = $response->getBody()->getContents();
-                $response = $response->withBody(
-                    Utils::streamFor(
-                        $this->nonceService->addNonceToStyles($content)
-                    )
-                );
 
                 // Add nonce to style-src directive
                 $directive .= " 'nonce-" . $this->nonceService->getNonce() . "'";

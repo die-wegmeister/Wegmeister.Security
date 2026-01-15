@@ -46,6 +46,8 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
             return $response;
         }
 
+        $isHtmlResponse = str_contains($response->getHeaderLine('Content-Type'), 'text/html');
+
         // Add security headers
         if (!$response->hasHeader('X-Content-Type-Options')) {
             $response = $response->withHeader('X-Content-Type-Options', 'nosniff');
@@ -54,11 +56,13 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
             $response = $response->withHeader('X-XSS-Protection', '0');
         }
 
-        if ($response->hasHeader('Content-Security-Policy')) {
-            // Update existing CSP header to add nonce
-            $response = $this->updateCSPHeaderWithNonce($response);
-        } else {
-            $response = $this->addCSPHeader($request, $response);
+        if ($isHtmlResponse === true) {
+            if ($response->hasHeader('Content-Security-Policy')) {
+                // Update existing CSP header to add nonce
+                $response = $this->updateCSPHeaderWithNonce($response);
+            } else {
+                $response = $this->addCSPHeader($request, $response);
+            }
         }
 
         if (!$response->hasHeader('Strict-Transport-Security')) {
@@ -108,8 +112,6 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
         $cspDirectives = explode(';', $cspHeader);
         $updatedDirectives = [];
 
-        $isHtmlResponse = str_contains($response->getHeaderLine('Content-Type'), 'text/html');
-
         foreach ($cspDirectives as $directive) {
             $directive = trim($directive);
 
@@ -120,15 +122,13 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
             }
 
             if (str_starts_with($directive, 'script-src')) {
-                if ($isHtmlResponse) {
-                    // Update script tags in the response body
-                    $content = $response->getBody()->getContents();
-                    $response = $response->withBody(
-                        Utils::streamFor(
-                            $this->nonceService->addNonceToScripts($content)
-                        )
-                    );
-                }
+                // Update script tags in the response body
+                $content = $response->getBody()->getContents();
+                $response = $response->withBody(
+                    Utils::streamFor(
+                        $this->nonceService->addNonceToScripts($content)
+                    )
+                );
 
                 // Remove existing nonce entries
                 $directive = preg_replace("/ 'nonce-[^']*'/", '', $directive);
@@ -136,15 +136,13 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
                 // Add nonce to script-src directive
                 $directive .= " 'nonce-" . $this->nonceService->getNonce() . "'";
             } else if (str_starts_with($directive, 'style-src')) {
-                if ($isHtmlResponse === true) {
-                    // Update style tags in the response body
-                    $content = $response->getBody()->getContents();
-                    $response = $response->withBody(
-                        Utils::streamFor(
-                            $this->nonceService->addNonceToStyles($content)
-                        )
-                    );
-                }
+                // Update style tags in the response body
+                $content = $response->getBody()->getContents();
+                $response = $response->withBody(
+                    Utils::streamFor(
+                        $this->nonceService->addNonceToStyles($content)
+                    )
+                );
 
                 // Remove existing nonce entries
                 $directive = preg_replace("/ 'nonce-[^']*'/", '', $directive);
@@ -169,7 +167,6 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
      */
     protected function addCSPHeader(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-
         $cspConfig = $this->headersConfiguration['ContentSecurityPolicy']['parts'] ?? [];
         $cspDirectives = [];
 
@@ -181,16 +178,18 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
 
             // Add nonce to script-src and style-src
             if ($directive === 'script-src') {
-                // Update script tags in the response body
-                $content = $response->getBody()->getContents();
-                $response = $response->withBody(
-                    Utils::streamFor(
-                        $this->nonceService->addNonceToScripts($content)
-                    )
-                );
+                if (!str_contains($directive, "'unsafe-inline'")) {
+                    // Update script tags in the response body
+                    $content = $response->getBody()->getContents();
+                    $response = $response->withBody(
+                        Utils::streamFor(
+                            $this->nonceService->addNonceToScripts($content)
+                        )
+                    );
 
-                // Add nonce to CSP header
-                $value .= " 'nonce-" . $this->nonceService->getNonce() . "'";
+                    // Add nonce to CSP header
+                    $value .= " 'nonce-" . $this->nonceService->getNonce() . "'";
+                }
 
                 // Allow unsafe-eval in Neos backend, if configured
                 if (

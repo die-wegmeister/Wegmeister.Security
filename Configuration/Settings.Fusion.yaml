@@ -1,0 +1,4 @@
+Neos:
+  Fusion:
+    defaultContext:
+      Wegmeister.Security.Hash: '\Wegmeister\Security\EelHelper\HashHelper'

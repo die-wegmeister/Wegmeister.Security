@@ -41,8 +41,8 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
             return $response;
         }
 
-        // Skip, if we do not have a 200 OK response
-        if ($response->getStatusCode() !== 200) {
+        // Skip, if we have a redirect
+        if ($response->getStatusCode() >= 300 && $response->getStatusCode() < 400) {
             return $response;
         }
 

@@ -20,5 +20,5 @@ Neos:
 
 JvMTECH:
   NeosHardening:
-    checkFailedLogins: false
+    checkFailedLogins: true
     blockAfterFailedLogins: 5

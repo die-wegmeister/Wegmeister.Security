@@ -7,6 +7,7 @@ Wegmeister:
         allowUnsafeInlineStylesInNeosBackend: true
         parts:
           default-src: "'none'"
+          base-uri: "'self'"
 
           # For inline style and script we use nonces, which are added dynamically in the Middleware.
           # Note: If you set this to null, the value AND the nonce-setting will be removed!
@@ -24,6 +25,7 @@ Wegmeister:
           frame-ancestors: "'self'"
           form-action: "'self'"
           worker-src: "'self' blob:"
+          manifest-src: "'self'"
 
       # Values defined here are used as default, if they are removed or missing in another settings file.
       Strict-Transport-Security:

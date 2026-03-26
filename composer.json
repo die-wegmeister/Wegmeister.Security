@@ -6,7 +6,7 @@
     "require": {
         "neos/flow": "~8.3",
         "jvmtech/neos-hardening": "^1.0",
-        "sandstorm/neostwofactorauthentication": "^1.0"
+        "sandstorm/neostwofactorauthentication": "^2.0"
     },
     "autoload": {
         "psr-4": {

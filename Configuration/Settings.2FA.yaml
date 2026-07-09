@@ -5,3 +5,25 @@ Sandstorm:
     # enforce 2FA for specific roles
     enforce2FAForRoles:
       - 'Neos.Neos:Administrator'
+
+    # Acceptable TOTP clock drift in seconds. Codes from (now - leeway) through (now + leeway)
+    # are accepted. 0 disables leeway (exact match only). MUST be lower than the 30s TOTP period;
+    # values >= 30 are clamped to 29.
+    totpLeewayInSeconds: 5
+
+    webAuthn:
+      relyingPartyName: 'My CMS'
+      # null means: derive from the request hostname (works for same-origin deployments).
+      # Set to the registrable domain ('example.com') if you serve the backend from a subdomain
+      # and want credentials to be usable across subdomains.
+      relyingPartyId: null
+      # Default is 'discouraged' so FIDO U2F-only authenticators (e.g. YubiKey 4) work
+      # via the browser's U2F-compat fallback. Set to 'preferred' or 'required' to
+      # demand PIN/biometric — note that 'required' excludes U2F-only keys.
+      userVerification: 'discouraged'
+      timeout: 60000
+      # Default false. When true: the login screen shows "Sign in with a passkey", and credentials
+      # registered from then on are created as discoverable (resident) credentials with user
+      # verification required — i.e. real "Passkeys". When false, WebAuthn credentials are
+      # registered as non-discoverable "Passkey as 2nd factor" and the login button is not shown.
+      passwordlessLoginEnabled: true

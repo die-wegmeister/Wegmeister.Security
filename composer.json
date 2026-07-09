@@ -2,11 +2,13 @@
     "name": "wegmeister/flow-security",
     "type": "neos-package",
     "description": "Add security headers and install some additional packages for improved security of Neos / Flow.",
-    "license": ["GPL-3.0-or-later"],
+    "license": [
+        "GPL-3.0-or-later"
+    ],
     "require": {
         "neos/flow": "~8.3",
         "jvmtech/neos-hardening": "^1.0",
-        "sandstorm/neostwofactorauthentication": "^2.0"
+        "sandstorm/neostwofactorauthentication": "^3.0"
     },
     "autoload": {
         "psr-4": {

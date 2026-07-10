@@ -12,7 +12,8 @@ Sandstorm:
     totpLeewayInSeconds: 5
 
     webAuthn:
-      relyingPartyName: 'My CMS'
+      # Should be overridden in a site package to have a better matching name.
+      relyingPartyName: 'Neos CMS'
       # null means: derive from the request hostname (works for same-origin deployments).
       # Set to the registrable domain ('example.com') if you serve the backend from a subdomain
       # and want credentials to be usable across subdomains.
